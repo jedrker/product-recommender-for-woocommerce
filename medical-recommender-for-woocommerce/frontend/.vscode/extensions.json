@@ -1,0 +1,31 @@
+{
+  "recommendations": [
+    // Essential for TypeScript development
+    "ms-vscode.vscode-typescript-next",
+
+    // Code quality and formatting
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+
+    // Additional helpful extensions
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-json",
+    "redhat.vscode-yaml",
+
+    // Git and version control
+    "eamodio.gitlens",
+
+    // Auto imports and path intelligence
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-typescript-next",
+
+    // Utility
+    "formulahendry.auto-rename-tag",
+    "ms-vscode.vscode-json"
+  ],
+  "unwantedRecommendations": [
+    // These might conflict with our setup
+    "ms-vscode.vscode-typescript",
+    "hookyqr.beautify"
+  ]
+}

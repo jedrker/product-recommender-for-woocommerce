@@ -4,7 +4,7 @@ Inteligentny system rekomendacji produktów medycznych, który integruje się ze
 
 ## 📌 Status projektu
 
-**Aktualny etap: Etap 3 - API serwera (Flask)** ✅
+**Aktualny etap: Etap 4 - Frontend (HTML/JS)** ✅
 
 ### Zrealizowane funkcjonalności:
 
@@ -34,8 +34,18 @@ Inteligentny system rekomendacji produktów medycznych, który integruje się ze
 - ✅ Walidacja parametrów zapytań
 - ✅ Testy API endpoints
 
+#### ✅ **Etap 4 - Frontend (HTML/JS)**
+- ✅ Responsive HTML z Tailwind CSS
+- ✅ Pole tekstowe i przycisk "Szukaj rekomendacji"
+- ✅ Fetch API do komunikacji z backendem
+- ✅ Wyświetlanie wyników w cards layout
+- ✅ Obsługa błędów i stanów ładowania
+- ✅ Opcje zaawansowane (limit, format)
+- ✅ Wersja iframe do osadzenia w WordPress
+- ✅ Przykłady zapytań i auto-complete
+- ✅ Konfiguracja dla Netlify/Vercel
+
 ### Planowane etapy:
-- 🟦 **Etap 4**: Frontend (HTML/JS)
 - 🟥 **Etap 5**: Konfiguracja produkcyjna
 
 ## 🚀 Szybki start
@@ -268,6 +278,159 @@ API zwraca standardowe kody HTTP i szczegółowe informacje o błędach:
   "code": "MISSING_PARAMETER",
   "example": "/recommend?input=cukrzyca"
 }
+```
+
+## 🎨 Frontend (Etap 4)
+
+### Uruchamianie frontendu
+
+```bash
+# Przejdź do katalogu frontend
+cd frontend
+
+# Uruchom lokalny serwer HTTP
+python -m http.server 8080
+
+# Otwórz w przeglądarce
+open http://localhost:8080
+```
+
+### 📱 Dostępne wersje
+
+#### `index.html` - Standalone Application
+Pełna aplikacja webowa z wszystkimi funkcjami:
+- Responsive design (desktop/mobile)
+- Opcje zaawansowane
+- Szczegółowe wyniki
+- Przykłady zapytań
+
+#### `iframe.html` - Widget dla WordPress
+Kompaktowa wersja do osadzenia jako iframe:
+- Zoptymalizowana dla małych przestrzeni
+- Komunikacja z parent window
+- Uproszczony interfejs
+- Auto-resize
+
+### 🔗 Integracja z WordPress
+
+#### Metoda 1: Bezpośrednie iframe
+```html
+<iframe 
+    src="https://twoja-domena.pl/medical-recommender/iframe.html?api=https://api.twoja-domena.pl:5000"
+    width="100%" 
+    height="600"
+    frameborder="0"
+    title="Medical Product Recommender">
+</iframe>
+```
+
+#### Metoda 2: WordPress Shortcode
+Dodaj do `functions.php`:
+```php
+function medical_recommender_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'api_url' => 'http://localhost:5000',
+        'height' => '600'
+    ), $atts);
+    
+    $iframe_url = get_site_url() . '/wp-content/uploads/medical-recommender/iframe.html?api=' . urlencode($atts['api_url']);
+    
+    return '<iframe src="' . esc_url($iframe_url) . '" width="100%" height="' . $atts['height'] . '" frameborder="0"></iframe>';
+}
+add_shortcode('medical_recommender', 'medical_recommender_shortcode');
+```
+
+Użycie w treści:
+```
+[medical_recommender api_url="https://twoja-domena.pl:5000" height="600"]
+```
+
+### 🌐 Hosting
+
+#### Netlify
+1. Połącz repozytorium GitHub z Netlify
+2. Ustaw build directory na `frontend/`
+3. Skonfiguruj zmienne środowiskowe API URL
+
+#### Vercel
+1. Import projektu z GitHub
+2. Ustaw Root Directory na `frontend/`
+3. Deploy automatycznie
+
+#### Własny hosting
+```bash
+# Skopiuj pliki frontend
+scp -r frontend/* user@server:/var/www/html/medical-recommender/
+
+# Skonfiguruj nginx/apache
+# Ustaw CORS headers dla iframe
+```
+
+### 🎛️ Konfiguracja API URL
+
+Frontend automatycznie wykrywa URL API:
+- **Development**: `http://localhost:5000`
+- **Production**: Parametr `?api=` w URL iframe
+- **Environment**: Można ustawić przez zmienne środowiskowe
+
+```javascript
+// W iframe.html
+const apiUrl = new URLSearchParams(window.location.search).get('api') || 'http://localhost:5000';
+```
+
+### 📊 Wydarzenia i Analytics
+
+Widget wysyła wydarzenia do parent window:
+
+```javascript
+// Nasłuchiwanie eventów w WordPress
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'medical_recommender') {
+        console.log('Event:', event.data.event, event.data.data);
+        
+        // Integracja z Google Analytics
+        if (typeof gtag !== 'undefined' && event.data.event === 'search_success') {
+            gtag('event', 'medical_search', {
+                'query': event.data.data.query,
+                'results_count': event.data.data.count
+            });
+        }
+    }
+});
+```
+
+**Dostępne eventy:**
+- `iframe_loaded` - Widget załadowany
+- `search_started` - Rozpoczęto wyszukiwanie
+- `search_success` - Znaleziono wyniki
+- `search_error` - Błąd wyszukiwania
+- `results_displayed` - Wyświetlono wyniki
+
+### 🎨 Customizacja
+
+#### Zmiana kolorów (Tailwind CSS)
+```javascript
+// W <script> sekcji
+tailwind.config = {
+    theme: {
+        extend: {
+            colors: {
+                medical: {
+                    500: '#twoj-kolor',  // Główny kolor
+                    600: '#ciemniejszy',
+                    // ...
+                }
+            }
+        }
+    }
+}
+```
+
+#### Ukrycie sekcji
+```css
+/* Dodaj do <style> */
+.hide-examples { display: none; }
+.hide-advanced { display: none; }
 ```
 
 ## 📊 Przykłady rekomendacji

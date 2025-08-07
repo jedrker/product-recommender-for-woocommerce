@@ -1,0 +1,5 @@
+# Netlify redirects for SPA
+/*    /index.html   200
+
+# API proxy (if needed)
+/api/*  http://your-api-server.com:5000/:splat  200

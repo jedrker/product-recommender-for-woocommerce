@@ -1,0 +1,32 @@
+# Build outputs
+dist/
+.vite/
+coverage/
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Generated files
+*.min.js
+*.min.css
+pnpm-lock.yaml
+
+# Cache
+.eslintcache
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Specific files that shouldn't be formatted
+CHANGELOG.md
+LICENSE
+
+# Configuration files
+.eslintrc.cjs
+.prettierrc.cjs
+
+# HTML files with custom formatting
+wordpress-integration.html

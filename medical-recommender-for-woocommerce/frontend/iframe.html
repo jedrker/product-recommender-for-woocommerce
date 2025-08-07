@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Medical Product Recommender - Widget</title>
+
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Custom Tailwind Configuration -->
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            medical: {
+                                50: '#f0f9ff',
+                                100: '#e0f2fe',
+                                200: '#bae6fd',
+                                300: '#7dd3fc',
+                                400: '#38bdf8',
+                                500: '#0ea5e9',
+                                600: '#0284c7',
+                                700: '#0369a1',
+                                800: '#075985',
+                                900: '#0c4a6e',
+                            },
+                        },
+                    },
+                },
+            };
+        </script>
+
+        <!-- Font Awesome Icons -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+
+        <style>
+            /* Compact iframe styles */
+            body {
+                margin: 0;
+                padding: 0;
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+            }
+
+            /* Smooth transitions */
+            * {
+                transition: all 0.2s ease-in-out;
+            }
+
+            /* Iframe-specific adjustments */
+            .iframe-container {
+                min-height: 400px;
+                max-height: 80vh;
+                overflow-y: auto;
+            }
+
+            /* Compact product cards for iframe */
+            .product-card-compact {
+                padding: 12px;
+                margin-bottom: 8px;
+            }
+
+            /* Hide footer in iframe */
+            .iframe-hidden {
+                display: none;
+            }
+        </style>
+    </head>
+    <body class="bg-gradient-to-br from-medical-50 to-blue-50">
+        <!-- Iframe Container -->
+        <div class="iframe-container p-4">
+            <!-- Compact Header -->
+            <header class="text-center mb-6">
+                <h1
+                    class="text-xl md:text-2xl font-bold text-gray-800 flex items-center justify-center"
+                >
+                    <i class="fas fa-heartbeat text-2xl text-medical-600 mr-2"></i>
+                    Medical Recommender
+                </h1>
+                <p class="text-gray-600 text-sm mt-2">Produkty medyczne dla Twojego zawodu</p>
+            </header>
+
+            <!-- Compact Search Section -->
+            <section class="bg-white rounded-lg shadow-md p-4 mb-6">
+                <form id="searchForm" class="space-y-4">
+                    <div>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                id="searchInput"
+                                name="input"
+                                placeholder="np. ratownik medyczny, cukrzyca..."
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-medical-500 focus:border-transparent outline-none"
+                                autocomplete="off"
+                                required
+                            />
+                            <div id="loadingSpinner" class="absolute right-3 top-2 hidden">
+                                <i class="fas fa-spinner fa-spin text-medical-500"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        id="searchButton"
+                        class="w-full bg-medical-600 hover:bg-medical-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-medical-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <i class="fas fa-search mr-2"></i>
+                        <span id="searchButtonText">Szukaj</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="hidden">
+                <!-- Query Info - Compact -->
+                <div
+                    id="queryInfo"
+                    class="bg-medical-50 border border-medical-200 rounded-lg p-3 mb-4"
+                >
+                    <div id="queryDetails" class="text-sm text-medical-700"></div>
+                </div>
+
+                <!-- Products Grid - Compact -->
+                <div class="bg-white rounded-lg shadow-md p-4">
+                    <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-pills mr-2 text-medical-600"></i>
+                        Produkty
+                    </h2>
+
+                    <div id="productsGrid" class="space-y-3">
+                        <!-- Products will be inserted here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="errorSection" class="hidden">
+                <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-2xl mb-2"></i>
+                    <h3 class="font-semibold text-red-800 mb-2">Błąd</h3>
+                    <p id="errorMessage" class="text-red-700 text-sm mb-3"></p>
+                    <button
+                        id="retryButton"
+                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm"
+                    >
+                        Spróbuj ponownie
+                    </button>
+                </div>
+            </section>
+
+            <!-- No Results Section -->
+            <section id="noResultsSection" class="hidden">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                    <i class="fas fa-search text-yellow-500 text-2xl mb-2"></i>
+                    <h3 class="font-semibold text-yellow-800 mb-2">Brak wyników</h3>
+                    <p class="text-yellow-700 text-sm">Spróbuj innych słów kluczowych</p>
+                </div>
+            </section>
+
+            <!-- Quick Examples - Compact -->
+            <section class="mt-6 bg-white rounded-lg shadow-md p-4">
+                <h3 class="font-bold text-gray-800 mb-3 text-sm">
+                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                    Przykłady
+                </h3>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button
+                        class="example-btn text-left px-2 py-1 bg-gray-50 hover:bg-medical-50 rounded border text-xs"
+                        data-query="ratownik medyczny"
+                    >
+                        🚑 Ratownik
+                    </button>
+                    <button
+                        class="example-btn text-left px-2 py-1 bg-gray-50 hover:bg-medical-50 rounded border text-xs"
+                        data-query="pielęgniarka"
+                    >
+                        👩‍⚕️ Pielęgniarka
+                    </button>
+                    <button
+                        class="example-btn text-left px-2 py-1 bg-gray-50 hover:bg-medical-50 rounded border text-xs"
+                        data-query="cukrzyca"
+                    >
+                        🩸 Cukrzyca
+                    </button>
+                    <button
+                        class="example-btn text-left px-2 py-1 bg-gray-50 hover:bg-medical-50 rounded border text-xs"
+                        data-query="higiena"
+                    >
+                        🧼 Higiena
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- JavaScript -->
+        <script>
+            // Iframe-specific configuration
+            class IframeMedicalRecommender {
+                constructor() {
+                    // API Configuration - try to detect parent domain
+                    this.apiBaseUrl = this.getApiBaseUrl();
+
+                    // DOM Elements
+                    this.searchForm = document.getElementById('searchForm');
+                    this.searchInput = document.getElementById('searchInput');
+                    this.searchButton = document.getElementById('searchButton');
+                    this.searchButtonText = document.getElementById('searchButtonText');
+                    this.loadingSpinner = document.getElementById('loadingSpinner');
+
+                    // Sections
+                    this.resultsSection = document.getElementById('resultsSection');
+                    this.errorSection = document.getElementById('errorSection');
+                    this.noResultsSection = document.getElementById('noResultsSection');
+                    this.queryDetails = document.getElementById('queryDetails');
+                    this.productsGrid = document.getElementById('productsGrid');
+                    this.errorMessage = document.getElementById('errorMessage');
+                    this.retryButton = document.getElementById('retryButton');
+
+                    // State
+                    this.isLoading = false;
+
+                    this.init();
+                }
+
+                getApiBaseUrl() {
+                    // Try to get API URL from iframe parameters or parent
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const apiUrl = urlParams.get('api');
+
+                    if (apiUrl) {
+                        return apiUrl;
+                    }
+
+                    // Default to localhost for development
+                    return 'http://localhost:5000';
+                }
+
+                init() {
+                    this.bindEvents();
+                    this.notifyParent('iframe_loaded');
+                }
+
+                bindEvents() {
+                    this.searchForm.addEventListener('submit', e => {
+                        e.preventDefault();
+                        this.handleSearch();
+                    });
+
+                    this.retryButton.addEventListener('click', () => {
+                        this.handleSearch();
+                    });
+
+                    document.querySelectorAll('.example-btn').forEach(btn => {
+                        btn.addEventListener('click', e => {
+                            const query = e.target.getAttribute('data-query');
+                            this.searchInput.value = query;
+                            this.handleSearch();
+                        });
+                    });
+                }
+
+                async handleSearch() {
+                    const query = this.searchInput.value.trim();
+
+                    if (!query || this.isLoading) {
+                        return;
+                    }
+
+                    this.setLoadingState(true);
+                    this.hideAllSections();
+                    this.notifyParent('search_started', { query });
+
+                    try {
+                        const data = await this.fetchRecommendations(query);
+                        this.displayResults(data);
+                        this.notifyParent('search_success', { query, count: data.count });
+                    } catch (error) {
+                        this.displayError(error);
+                        this.notifyParent('search_error', { query, error: error.message });
+                    } finally {
+                        this.setLoadingState(false);
+                    }
+                }
+
+                async fetchRecommendations(query) {
+                    const params = new URLSearchParams({
+                        input: query,
+                        limit: '8', // Limit for iframe
+                        format: 'simple',
+                    });
+
+                    const url = `${this.apiBaseUrl}/recommend?${params}`;
+
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            Accept: 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        signal: AbortSignal.timeout(15000),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.error || `HTTP ${response.status}`);
+                    }
+
+                    return await response.json();
+                }
+
+                displayResults(data) {
+                    if (!data.products || data.products.length === 0) {
+                        this.displayNoResults();
+                        return;
+                    }
+
+                    this.updateQueryInfo(data);
+                    this.productsGrid.innerHTML = '';
+
+                    data.products.forEach((product, index) => {
+                        const productCard = this.createCompactProductCard(product, index);
+                        this.productsGrid.appendChild(productCard);
+                    });
+
+                    this.resultsSection.classList.remove('hidden');
+                    this.notifyParent('results_displayed', { count: data.products.length });
+                }
+
+                updateQueryInfo(data) {
+                    const confidence = Math.round(data.confidence * 100);
+
+                    this.queryDetails.innerHTML = `
+                    <strong>Zapytanie:</strong> ${this.escapeHtml(data.query)} 
+                    <span class="ml-4"><strong>Pewność:</strong> ${confidence}%</span>
+                    <span class="ml-4"><strong>Produktów:</strong> ${data.count}</span>
+                `;
+                }
+
+                createCompactProductCard(product, index) {
+                    const card = document.createElement('div');
+                    card.className =
+                        'bg-gray-50 rounded-lg p-3 border border-gray-200 hover:shadow-sm transition-shadow';
+
+                    const description = product.description || 'Brak opisu';
+                    const truncatedDesc =
+                        description.length > 80
+                            ? description.substring(0, 80) + '...'
+                            : description;
+
+                    card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-semibold text-gray-800 text-sm flex-1 pr-2">
+                            ${this.escapeHtml(product.name)}
+                        </h3>
+                        <span class="text-sm font-bold text-medical-600 whitespace-nowrap">
+                            ${this.formatPrice(product.price)}
+                        </span>
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <span class="inline-block px-2 py-1 bg-medical-100 text-medical-800 text-xs rounded">
+                            ${this.escapeHtml(product.category)}
+                        </span>
+                    </div>
+                    
+                    <p class="text-gray-600 text-xs mt-2 leading-relaxed">
+                        ${this.escapeHtml(truncatedDesc)}
+                    </p>
+                `;
+
+                    return card;
+                }
+
+                formatPrice(price) {
+                    if (typeof price === 'number') {
+                        return `${price.toFixed(2)} PLN`;
+                    }
+                    return `${price} PLN`;
+                }
+
+                displayNoResults() {
+                    this.noResultsSection.classList.remove('hidden');
+                }
+
+                displayError(error) {
+                    let errorText = 'Wystąpił błąd podczas pobierania rekomendacji.';
+
+                    if (error.message.includes('Failed to fetch')) {
+                        errorText = 'Nie można połączyć się z serwerem API.';
+                    } else if (error.message) {
+                        errorText = error.message;
+                    }
+
+                    this.errorMessage.textContent = errorText;
+                    this.errorSection.classList.remove('hidden');
+                }
+
+                setLoadingState(isLoading) {
+                    this.isLoading = isLoading;
+
+                    if (isLoading) {
+                        this.searchButton.disabled = true;
+                        this.searchButtonText.textContent = 'Szukam...';
+                        this.loadingSpinner.classList.remove('hidden');
+                        this.searchInput.disabled = true;
+                    } else {
+                        this.searchButton.disabled = false;
+                        this.searchButtonText.textContent = 'Szukaj';
+                        this.loadingSpinner.classList.add('hidden');
+                        this.searchInput.disabled = false;
+                    }
+                }
+
+                hideAllSections() {
+                    this.resultsSection.classList.add('hidden');
+                    this.errorSection.classList.add('hidden');
+                    this.noResultsSection.classList.add('hidden');
+                }
+
+                escapeHtml(text) {
+                    const div = document.createElement('div');
+                    div.textContent = text;
+                    return div.innerHTML;
+                }
+
+                notifyParent(event, data = {}) {
+                    try {
+                        if (window.parent && window.parent !== window) {
+                            window.parent.postMessage(
+                                {
+                                    type: 'medical_recommender',
+                                    event: event,
+                                    data: data,
+                                },
+                                '*'
+                            );
+                        }
+                    } catch (e) {
+                        // Ignore errors if parent is not accessible
+                    }
+                }
+            }
+
+            // Initialize when DOM is loaded
+            document.addEventListener('DOMContentLoaded', () => {
+                new IframeMedicalRecommender();
+            });
+        </script>
+    </body>
+</html>

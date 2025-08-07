@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Recommender - WordPress Integration Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .demo-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .iframe-container {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            margin: 20px 0;
+        }
+        
+        iframe {
+            width: 100%;
+            border: none;
+            min-height: 500px;
+        }
+        
+        .code-block {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 16px;
+            margin: 16px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        
+        h1 { color: #333; }
+        h2 { color: #0284c7; margin-top: 30px; }
+        .instructions { background: #e3f2fd; padding: 15px; border-radius: 6px; margin: 15px 0; }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <h1>🏥 Medical Product Recommender - WordPress Integration</h1>
+        <p>Przykład integracji systemu rekomendacji produktów medycznych z WordPress jako iframe.</p>
+        
+        <h2>📱 Demo - Widget w iframe</h2>
+        <div class="iframe-container">
+            <iframe 
+                src="iframe.html?api=http://localhost:5000" 
+                title="Medical Product Recommender Widget"
+                id="medicalWidget">
+            </iframe>
+        </div>
+        
+        <h2>📋 Instrukcja integracji z WordPress</h2>
+        
+        <div class="instructions">
+            <h3>🚀 Krok 1: Wdróż API na serwerze</h3>
+            <p>Uruchom serwer API na swoim hostingu:</p>
+            <div class="code-block">
+# Na serwerze
+git clone <your-repo>
+cd medical-recommender-for-woocommerce
+pip install -r requirements.txt
+
+# Skonfiguruj .env z kluczami WooCommerce
+cp env.example .env
+# Edytuj .env z prawdziwymi danymi
+
+# Uruchom serwer (produkcja)
+python server.py --host 0.0.0.0 --port 5000
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>🌐 Krok 2: Upload plików frontend</h3>
+            <p>Skopiuj pliki frontend na hosting (np. w folderze wp-content/uploads/medical-recommender/):</p>
+            <div class="code-block">
+medical-recommender/
+├── iframe.html
+├── index.html  (opcjonalnie - standalone)
+└── app.js     (opcjonalnie)
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>📝 Krok 3: Dodaj iframe do WordPress</h3>
+            <p>W edytorze WordPress (post/page) wklej kod HTML:</p>
+            <div class="code-block">
+&lt;div style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;"&gt;
+    &lt;iframe 
+        src="https://TWOJA-DOMENA.pl/wp-content/uploads/medical-recommender/iframe.html?api=https://TWOJA-DOMENA.pl:5000"
+        width="100%" 
+        height="600"
+        frameborder="0"
+        title="Medical Product Recommender"
+        style="border: none;"&gt;
+    &lt;/iframe&gt;
+&lt;/div&gt;
+            </div>
+        </div>
+        
+        <div class="instructions">
+            <h3>🔧 Krok 4: Konfiguracja zaawansowana (opcjonalna)</h3>
+            <p>Dodaj do functions.php motywu WordPress:</p>
+            <div class="code-block">
+// Medical Recommender Shortcode
+function medical_recommender_shortcode($atts) {
+    $atts = shortcode_atts(array(
+        'api_url' => 'http://localhost:5000',
+        'height' => '600',
+        'width' => '100%'
+    ), $atts);
+    
+    $iframe_url = get_site_url() . '/wp-content/uploads/medical-recommender/iframe.html?api=' . urlencode($atts['api_url']);
+    
+    return '&lt;div style="width: ' . $atts['width'] . '; height: ' . $atts['height'] . 'px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden;"&gt;
+        &lt;iframe 
+            src="' . esc_url($iframe_url) . '"
+            width="100%" 
+            height="' . $atts['height'] . '"
+            frameborder="0"
+            title="Medical Product Recommender"
+            style="border: none;"&gt;
+        &lt;/iframe&gt;
+    &lt;/div&gt;';
+}
+add_shortcode('medical_recommender', 'medical_recommender_shortcode');
+            </div>
+            <p>Następnie użyj shortcode w treści:</p>
+            <div class="code-block">
+[medical_recommender api_url="https://TWOJA-DOMENA.pl:5000" height="600"]
+            </div>
+        </div>
+        
+        <h2>🎛️ Opcje konfiguracji iframe</h2>
+        <table border="1" style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <tr style="background: #f8f9fa;">
+                <th style="padding: 10px; text-align: left;">Parametr</th>
+                <th style="padding: 10px; text-align: left;">Opis</th>
+                <th style="padding: 10px; text-align: left;">Przykład</th>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">api</td>
+                <td style="padding: 10px;">URL do API serwera</td>
+                <td style="padding: 10px;">?api=https://twoja-domena.pl:5000</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">height</td>
+                <td style="padding: 10px;">Wysokość iframe</td>
+                <td style="padding: 10px;">height="600"</td>
+            </tr>
+            <tr>
+                <td style="padding: 10px;">width</td>
+                <td style="padding: 10px;">Szerokość iframe</td>
+                <td style="padding: 10px;">width="100%"</td>
+            </tr>
+        </table>
+        
+        <h2>📊 Monitoring i Analytics</h2>
+        <div class="instructions">
+            <p>Widget wysyła eventy do parent window. Możesz je przechwycić:</p>
+            <div class="code-block">
+// Dodaj do WordPress
+window.addEventListener('message', function(event) {
+    if (event.data.type === 'medical_recommender') {
+        console.log('Medical Recommender Event:', event.data.event, event.data.data);
+        
+        // Przykłady eventów:
+        // - iframe_loaded
+        // - search_started
+        // - search_success
+        // - search_error
+        // - results_displayed
+        
+        // Integracja z Google Analytics
+        if (typeof gtag !== 'undefined' && event.data.event === 'search_success') {
+            gtag('event', 'medical_search', {
+                'query': event.data.data.query,
+                'results_count': event.data.data.count
+            });
+        }
+    }
+});
+            </div>
+        </div>
+        
+        <h2>🔒 Bezpieczeństwo i CORS</h2>
+        <div class="instructions">
+            <p><strong>Ważne:</strong> W produkcji skonfiguruj CORS w API na konkretne domeny:</p>
+            <div class="code-block">
+# W api/app.py zmień:
+CORS(app, origins="*")  # DEV
+
+# Na:
+CORS(app, origins=["https://twoja-wordpress-domena.pl"])  # PROD
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Demo: Listen to iframe events
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'medical_recommender') {
+                console.log('🏥 Medical Recommender Event:', event.data.event, event.data.data);
+                
+                // Update iframe height dynamically (optional)
+                if (event.data.event === 'results_displayed') {
+                    const iframe = document.getElementById('medicalWidget');
+                    // iframe.style.height = 'auto'; // Add logic to resize
+                }
+            }
+        });
+        
+        // Auto-resize iframe based on content (basic implementation)
+        function resizeIframe() {
+            const iframe = document.getElementById('medicalWidget');
+            try {
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                const height = iframeDoc.body.scrollHeight;
+                iframe.style.height = Math.max(height, 500) + 'px';
+            } catch (e) {
+                // Cross-origin restrictions - ignore
+            }
+        }
+        
+        // Try to resize periodically (not ideal, but works for demo)
+        setInterval(resizeIframe, 2000);
+    </script>
+</body>
+</html>

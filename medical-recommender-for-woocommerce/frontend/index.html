@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="pl">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Medical Product Recommender</title>
+        <meta
+            name="description"
+            content="Inteligentny system rekomendacji produktów medycznych na podstawie zawodu lub problemu zdrowotnego."
+        />
+
+        <!-- Tailwind CSS -->
+        <script src="https://cdn.tailwindcss.com"></script>
+
+        <!-- Custom Tailwind Configuration -->
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            medical: {
+                                50: '#f0f9ff',
+                                100: '#e0f2fe',
+                                200: '#bae6fd',
+                                300: '#7dd3fc',
+                                400: '#38bdf8',
+                                500: '#0ea5e9',
+                                600: '#0284c7',
+                                700: '#0369a1',
+                                800: '#075985',
+                                900: '#0c4a6e',
+                            },
+                        },
+                    },
+                },
+            };
+        </script>
+
+        <!-- Font Awesome Icons -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+
+        <style>
+            /* Custom animations */
+            @keyframes pulse-slow {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+
+            .pulse-slow {
+                animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
+
+            /* Smooth transitions */
+            .transition-all-smooth {
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            /* Loading spinner */
+            .spinner {
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #0ea5e9;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* Gradient background */
+            .bg-gradient-medical {
+                background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            }
+
+            /* Custom scrollbar */
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-track {
+                background: #f1f1f1;
+                border-radius: 3px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+                background: #0ea5e9;
+                border-radius: 3px;
+            }
+
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                background: #0284c7;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50 font-sans">
+        <!-- Header -->
+        <header class="bg-gradient-medical text-white shadow-lg">
+            <div class="max-w-4xl mx-auto px-4 py-6">
+                <div class="text-center">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-2">
+                        <i class="fas fa-heartbeat mr-2"></i>
+                        Medical Product Recommender
+                    </h1>
+                    <p class="text-medical-100 text-lg">
+                        Znajdź odpowiednie produkty medyczne dla swojego zawodu lub problemu
+                        zdrowotnego
+                    </p>
+                    <div class="mt-2 text-xs text-medical-200">
+                        <i class="fas fa-code mr-1"></i>
+                        Powered by TypeScript + Vite + Vercel
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto px-4 py-8">
+            <!-- Search Form -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <form id="searchForm" class="space-y-4">
+                    <!-- Search Input -->
+                    <div class="relative">
+                        <label
+                            for="searchInput"
+                            class="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                            <i class="fas fa-search mr-1"></i>
+                            Wpisz swój zawód lub problem zdrowotny:
+                        </label>
+                        <input
+                            type="text"
+                            id="searchInput"
+                            placeholder="np. pielęgniarka, cukrzyca, nadciśnienie..."
+                            class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-medical-500 focus:ring-2 focus:ring-medical-200 transition-all-smooth"
+                            required
+                            minlength="2"
+                            maxlength="100"
+                        />
+                        <div
+                            class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+                        >
+                            <i class="fas fa-stethoscope text-gray-400"></i>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Options Toggle -->
+                    <div class="flex items-center justify-between">
+                        <button
+                            type="button"
+                            id="toggleAdvanced"
+                            class="text-medical-600 hover:text-medical-700 font-medium text-sm transition-all-smooth"
+                        >
+                            <i class="fas fa-cog mr-1" id="advancedIcon"></i>
+                            Opcje zaawansowane
+                        </button>
+                    </div>
+
+                    <!-- Advanced Options (Hidden by default) -->
+                    <div
+                        id="advancedOptions"
+                        class="hidden space-y-4 pt-4 border-t border-gray-200"
+                    >
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Limit -->
+                            <div>
+                                <label
+                                    for="limitSelect"
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                >
+                                    <i class="fas fa-list-ol mr-1"></i>
+                                    Limit wyników:
+                                </label>
+                                <select
+                                    id="limitSelect"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-medical-500 focus:ring-1 focus:ring-medical-200"
+                                >
+                                    <option value="5">5 produktów</option>
+                                    <option value="10" selected>10 produktów</option>
+                                    <option value="15">15 produktów</option>
+                                    <option value="20">20 produktów</option>
+                                </select>
+                            </div>
+
+                            <!-- Format -->
+                            <div>
+                                <label
+                                    for="formatSelect"
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                >
+                                    <i class="fas fa-file-code mr-1"></i>
+                                    Format odpowiedzi:
+                                </label>
+                                <select
+                                    id="formatSelect"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:border-medical-500 focus:ring-1 focus:ring-medical-200"
+                                >
+                                    <option value="json" selected>Pełny (JSON)</option>
+                                    <option value="simple">Uproszczony</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Search Button -->
+                    <button
+                        type="submit"
+                        id="searchButton"
+                        class="w-full bg-gradient-medical text-white py-3 px-6 rounded-lg font-semibold hover:shadow-lg transition-all-smooth disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled
+                    >
+                        <span id="searchButtonText">Szukaj rekomendacji</span>
+                        <div id="loadingSpinner" class="hidden inline-block ml-2">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Example Queries -->
+            <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                    <i class="fas fa-lightbulb mr-2 text-yellow-500"></i>
+                    Przykładowe zapytania:
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <button
+                        class="example-btn bg-medical-50 hover:bg-medical-100 text-medical-700 px-4 py-2 rounded-lg text-sm transition-all-smooth border border-medical-200"
+                        data-query="pielęgniarka"
+                    >
+                        <i class="fas fa-user-nurse mr-1"></i>
+                        Pielęgniarka
+                    </button>
+                    <button
+                        class="example-btn bg-medical-50 hover:bg-medical-100 text-medical-700 px-4 py-2 rounded-lg text-sm transition-all-smooth border border-medical-200"
+                        data-query="lekarz"
+                    >
+                        <i class="fas fa-user-md mr-1"></i>
+                        Lekarz
+                    </button>
+                    <button
+                        class="example-btn bg-medical-50 hover:bg-medical-100 text-medical-700 px-4 py-2 rounded-lg text-sm transition-all-smooth border border-medical-200"
+                        data-query="ratownik medyczny"
+                    >
+                        <i class="fas fa-ambulance mr-1"></i>
+                        Ratownik medyczny
+                    </button>
+                    <button
+                        class="example-btn bg-medical-50 hover:bg-medical-100 text-medical-700 px-4 py-2 rounded-lg text-sm transition-all-smooth border border-medical-200"
+                        data-query="fizjoterapeuta"
+                    >
+                        <i class="fas fa-dumbbell mr-1"></i>
+                        Fizjoterapeuta
+                    </button>
+                    <button
+                        class="example-btn bg-medical-50 hover:bg-medical-100 text-medical-700 px-4 py-2 rounded-lg text-sm transition-all-smooth border border-medical-200"
+                        data-query="cukrzyca"
+                    >
+                        <i class="fas fa-tint mr-1"></i>
+                        Cukrzyca
+                    </button>
+                    <button
+                        class="example-btn bg-medical-50 hover:bg-medical-100 text-medical-700 px-4 py-2 rounded-lg text-sm transition-all-smooth border border-medical-200"
+                        data-query="nadciśnienie"
+                    >
+                        <i class="fas fa-heartbeat mr-1"></i>
+                        Nadciśnienie
+                    </button>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <section id="resultsSection" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">
+                    <i class="fas fa-pills mr-2 text-medical-600"></i>
+                    Rekomendowane produkty
+                </h2>
+
+                <!-- Query Info -->
+                <div
+                    id="queryInfo"
+                    class="bg-medical-50 rounded-lg p-4 mb-6 border border-medical-200"
+                >
+                    <div id="queryDetails"></div>
+                </div>
+
+                <!-- Products Grid -->
+                <div
+                    id="productsGrid"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 custom-scrollbar"
+                >
+                    <!-- Products will be inserted here dynamically -->
+                </div>
+            </section>
+
+            <!-- No Results Section -->
+            <section id="noResultsSection" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="text-center py-8">
+                    <i class="fas fa-search text-gray-400 text-6xl mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Brak wyników</h3>
+                    <p class="text-gray-500 mb-4">
+                        Nie znaleziono produktów dla tego zapytania. Spróbuj zmienić frazę
+                        wyszukiwania.
+                    </p>
+                    <div class="text-sm text-gray-400">
+                        <p>Sugestie:</p>
+                        <ul class="list-disc list-inside mt-2 space-y-1">
+                            <li>Użyj ogólniejszych terminów (np. "lekarz" zamiast "kardiolog")</li>
+                            <li>Sprawdź pisownię</li>
+                            <li>Wypróbuj synonimy</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Error Section -->
+            <section id="errorSection" class="hidden bg-white rounded-xl shadow-lg p-6 mb-8">
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-6xl mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">Wystąpił błąd</h3>
+                    <p id="errorMessage" class="text-gray-600 mb-4"></p>
+                    <button
+                        id="retryButton"
+                        class="bg-medical-600 hover:bg-medical-700 text-white px-6 py-2 rounded-lg font-medium transition-all-smooth"
+                    >
+                        <i class="fas fa-redo mr-2"></i>
+                        Spróbuj ponownie
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-gray-300 mt-16">
+            <div class="max-w-4xl mx-auto px-4 py-8">
+                <div class="text-center">
+                    <p class="text-sm">
+                        &copy; 2024 Medical Product Recommender.
+                        <span class="text-medical-400">TypeScript + Vite + Vercel</span>
+                    </p>
+                    <div class="mt-2 text-xs text-gray-500">
+                        🔧 Powered by Python Flask API | 🎯 WooCommerce Integration | ⚡ Real-time
+                        Recommendations
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <!-- Load TypeScript application -->
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>
