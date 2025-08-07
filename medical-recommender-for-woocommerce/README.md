@@ -4,7 +4,7 @@ Inteligentny system rekomendacji produktów medycznych, który integruje się ze
 
 ## 📌 Status projektu
 
-**Aktualny etap: Etap 2 - Integracja z WooCommerce** ✅
+**Aktualny etap: Etap 3 - API serwera (Flask)** ✅
 
 ### Zrealizowane funkcjonalności:
 
@@ -24,8 +24,17 @@ Inteligentny system rekomendacji produktów medycznych, który integruje się ze
 - ✅ Konfiguracja przez zmienne środowiskowe (.env)
 - ✅ Testy jednostkowe dla integracji WooCommerce
 
+#### ✅ **Etap 3 - API serwera (Flask)**
+- ✅ Flask aplikacja z CORS
+- ✅ Endpoint `GET /recommend?input=<query>` - rekomendacje JSON
+- ✅ Endpoint `GET /products` - lista produktów (z filtrowaniem i paginacją)
+- ✅ Endpoint `GET /categories` - dostępne kategorie
+- ✅ Endpoint `GET /` - health check
+- ✅ Obsługa błędów HTTP (404, 405, 500)
+- ✅ Walidacja parametrów zapytań
+- ✅ Testy API endpoints
+
 ### Planowane etapy:
-- 🟧 **Etap 3**: API serwera (Flask/FastAPI)
 - 🟦 **Etap 4**: Frontend (HTML/JS)
 - 🟥 **Etap 5**: Konfiguracja produkcyjna
 
@@ -78,6 +87,187 @@ python main.py --query "ratownik medyczny"
 
 # Wymuszenie odświeżenia z WooCommerce
 python main.py --env .env --refresh
+```
+
+## 🌐 API Serwera (Etap 3)
+
+### Uruchamianie serwera
+
+```bash
+# Podstawowe uruchomienie
+python server.py
+
+# Z konfiguracją WooCommerce
+python server.py --env .env
+
+# Na konkretnym porcie
+python server.py --port 8000
+
+# Tryb debug
+python server.py --debug
+```
+
+Serwer będzie dostępny domyślnie na: **http://localhost:5000**
+
+### 📡 Dostępne endpointy
+
+#### `GET /` - Health Check
+Sprawdza status API i liczbę załadowanych produktów.
+
+**Przykład:**
+```bash
+curl http://localhost:5000/
+```
+
+**Odpowiedź:**
+```json
+{
+  "status": "healthy",
+  "message": "Medical Product Recommender API",
+  "version": "1.0.0",
+  "products_count": 1050,
+  "woocommerce_enabled": true,
+  "cache_enabled": true
+}
+```
+
+#### `GET /recommend` - Rekomendacje produktów
+Generuje rekomendacje na podstawie zapytania użytkownika.
+
+**Parametry:**
+- `input` (wymagany) - zapytanie (zawód, choroba, itp.)
+- `limit` (opcjonalny) - maksymalna liczba produktów (domyślnie: 10)
+- `format` (opcjonalny) - format odpowiedzi: `json` lub `simple` (domyślnie: `json`)
+
+**Przykłady:**
+```bash
+# Podstawowe zapytanie
+curl "http://localhost:5000/recommend?input=cukrzyca"
+
+# Z limitem produktów
+curl "http://localhost:5000/recommend?input=ratownik medyczny&limit=5"
+
+# Format uproszczony
+curl "http://localhost:5000/recommend?input=higiena&format=simple"
+```
+
+**Odpowiedź (format json):**
+```json
+{
+  "query": "cukrzyca",
+  "confidence": 0.1,
+  "reasoning": "Brak produktów w rekomendowanych kategoriach...",
+  "count": 10,
+  "products": [
+    {
+      "id": "123",
+      "name": "Wziernik nosowy",
+      "category": "narzedzia",
+      "price": 45.00,
+      "description": "Narzędzie laryngologiczne..."
+    }
+  ],
+  "meta": {
+    "total_products_available": 1050,
+    "categories_available": 8,
+    "woocommerce_enabled": true
+  }
+}
+```
+
+#### `GET /products` - Lista produktów
+Zwraca listę dostępnych produktów z możliwością filtrowania i paginacji.
+
+**Parametry:**
+- `category` (opcjonalny) - filtruj według kategorii
+- `limit` (opcjonalny) - liczba produktów na stronę (domyślnie: 50)
+- `offset` (opcjonalny) - liczba produktów do pominięcia (domyślnie: 0)
+
+**Przykłady:**
+```bash
+# Wszystkie produkty (pierwsze 50)
+curl "http://localhost:5000/products"
+
+# Produkty z kategorii higiena
+curl "http://localhost:5000/products?category=higiena"
+
+# Paginacja
+curl "http://localhost:5000/products?limit=20&offset=40"
+```
+
+**Odpowiedź:**
+```json
+{
+  "products": [
+    {
+      "id": "123",
+      "name": "Rękawiczki nitrylowe",
+      "category": "higiena",
+      "price": 29.99,
+      "description": "Rękawiczki bezpudrowe..."
+    }
+  ],
+  "pagination": {
+    "total": 1050,
+    "limit": 50,
+    "offset": 0,
+    "has_next": true,
+    "has_prev": false
+  },
+  "meta": {
+    "categories_available": ["higiena", "narzedzia", "opatrunki"],
+    "woocommerce_enabled": true
+  }
+}
+```
+
+#### `GET /categories` - Dostępne kategorie
+Zwraca listę wszystkich kategorii produktów z liczbą produktów w każdej.
+
+**Przykład:**
+```bash
+curl "http://localhost:5000/categories"
+```
+
+**Odpowiedź:**
+```json
+{
+  "categories": [
+    {
+      "name": "higiena",
+      "product_count": 451
+    },
+    {
+      "name": "narzedzia", 
+      "product_count": 206
+    }
+  ],
+  "total_categories": 8,
+  "total_products": 1050
+}
+```
+
+### 🔄 CORS
+
+API automatycznie obsługuje CORS dla wszystkich origin (rozwój). W produkcji należy ograniczyć do konkretnych domen.
+
+### ⚠️ Obsługa błędów
+
+API zwraca standardowe kody HTTP i szczegółowe informacje o błędach:
+
+- **400** - Błędne parametry
+- **404** - Nieznaleziony endpoint
+- **405** - Niedozwolona metoda HTTP
+- **500** - Błąd wewnętrzny serwera
+- **503** - Serwis niedostępny (recommender niezainicjalizowany)
+
+**Przykład błędu:**
+```json
+{
+  "error": "Missing required parameter 'input'",
+  "code": "MISSING_PARAMETER",
+  "example": "/recommend?input=cukrzyca"
+}
 ```
 
 ## 📊 Przykłady rekomendacji

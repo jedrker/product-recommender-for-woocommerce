@@ -12,6 +12,6 @@ pytest-cov==4.1.0
 black==23.12.1
 isort==5.13.2
 
-# Future dependencies (for next stages)
-# Flask==3.0.0
-# Flask-CORS==4.0.0 
+# API Server dependencies (Etap 3)
+Flask==3.0.0
+Flask-CORS==4.0.0 
