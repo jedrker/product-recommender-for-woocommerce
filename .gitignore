@@ -17,12 +17,9 @@ develop-eggs/
 downloads/
 
 # Frontend build outputs
-medical-recommender-for-woocommerce/frontend/dist/
-medical-recommender-for-woocommerce/frontend/.vite/
-medical-recommender-for-woocommerce/frontend/coverage/
-*/frontend/dist/
-*/frontend/.vite/
-*/frontend/coverage/
+frontend/dist/
+frontend/.vite/
+frontend/coverage/
 eggs/
 .eggs/
 lib/
@@ -229,13 +226,11 @@ __marimo__/
 !.env.example
 
 # WooCommerce API data and cache
-medical-recommender-for-woocommerce/data/products.json
-medical-recommender-for-woocommerce/data/cache_metadata.json
-medical-recommender-for-woocommerce/data/woocommerce_*.json
-medical-recommender-for-woocommerce/data/real_products.csv
-medical-recommender-for-woocommerce/data/backup_*.json
-*/data/products.json
-*/data/cache_metadata.json
+data/products.json
+data/cache_metadata.json
+data/woocommerce_*.json
+data/real_products.csv
+data/backup_*.json
 
 # Logs containing sensitive information
 logs/
