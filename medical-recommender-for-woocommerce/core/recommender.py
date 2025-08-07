@@ -13,6 +13,10 @@ import pandas as pd
 
 from core.models import Product, Recommendation, RecommendationRule
 from core.rules import get_recommendation_rules, get_fallback_categories
+from utils.config import Config
+from utils.cache import ProductCache
+from woo.client import WooCommerceClient
+from woo.mapper import WooCommerceMapper
 
 
 logger = logging.getLogger(__name__)
@@ -21,16 +25,25 @@ logger = logging.getLogger(__name__)
 class MedicalRecommender:
     """Main recommendation engine for medical products."""
 
-    def __init__(self, products_file: Optional[str] = None):
+    def __init__(self, products_file: Optional[str] = None, config: Optional[Config] = None):
         """Initialize the recommender with product data.
         
         Args:
             products_file: Path to CSV file with products. 
                          If None, uses default data/products.csv
+            config: Configuration object for WooCommerce integration
         """
         self.products: List[Product] = []
         self.rules: List[RecommendationRule] = get_recommendation_rules()
         self._products_by_category: Dict[str, List[Product]] = {}
+        
+        # WooCommerce integration
+        self.config = config
+        self.woo_client: Optional[WooCommerceClient] = None
+        self.cache: Optional[ProductCache] = None
+        
+        if config:
+            self._setup_woocommerce_integration()
         
         if products_file is None:
             # Default path relative to project root
@@ -38,6 +51,24 @@ class MedicalRecommender:
             products_file = project_root / "data" / "products.csv"
         
         self.load_products(products_file)
+
+    def _setup_woocommerce_integration(self) -> None:
+        """Setup WooCommerce integration if configured."""
+        if not self.config or not self.config.is_woocommerce_configured():
+            logger.info("WooCommerce not configured, using local data only")
+            return
+        
+        try:
+            self.woo_client = WooCommerceClient(self.config)
+            self.cache = ProductCache(
+                cache_dir="data",
+                cache_duration=self.config.cache_duration
+            )
+            logger.info("WooCommerce integration initialized")
+        except Exception as e:
+            logger.error(f"Failed to setup WooCommerce integration: {e}")
+            self.woo_client = None
+            self.cache = None
 
     def load_products(self, file_path: Union[str, Path]) -> None:
         """Load products from CSV file.
@@ -81,6 +112,111 @@ class MedicalRecommender:
         except Exception as e:
             logger.error(f"Error loading products from {file_path}: {e}")
             raise ValueError(f"Failed to load products: {e}") from e
+
+    def load_products_from_woocommerce(self, force_refresh: bool = False) -> bool:
+        """Load products from WooCommerce API.
+        
+        Args:
+            force_refresh: If True, ignore cache and fetch fresh data
+            
+        Returns:
+            True if products were loaded successfully, False otherwise
+        """
+        if not self.woo_client:
+            logger.warning("WooCommerce client not available")
+            return False
+        
+        # Try to load from cache first (unless force refresh)
+        if not force_refresh and self.cache:
+            cached_products = self.cache.load_products()
+            if cached_products:
+                self.products = cached_products
+                self._group_products_by_category()
+                logger.info(f"Loaded {len(self.products)} products from cache")
+                return True
+        
+        # Fetch from WooCommerce API
+        try:
+            logger.info("Fetching products from WooCommerce API")
+            woo_products = self.woo_client.get_all_products()
+            
+            if not woo_products:
+                logger.warning("No products returned from WooCommerce API")
+                return False
+            
+            # Map WooCommerce products to our format
+            self.products = WooCommerceMapper.map_woo_products_to_products(woo_products)
+            
+            # Group products by category
+            self._group_products_by_category()
+            
+            # Save to cache
+            if self.cache:
+                self.cache.save_products(self.products)
+            
+            logger.info(f"Successfully loaded {len(self.products)} products from WooCommerce")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to load products from WooCommerce: {e}")
+            return False
+
+    def refresh_products(self) -> bool:
+        """Force refresh products from WooCommerce.
+        
+        Returns:
+            True if refresh was successful, False otherwise
+        """
+        return self.load_products_from_woocommerce(force_refresh=True)
+
+    def get_cache_info(self) -> Optional[Dict]:
+        """Get information about the current cache.
+        
+        Returns:
+            Cache information dictionary or None if no cache
+        """
+        if self.cache:
+            return self.cache.get_cache_info()
+        return None
+
+    def clear_cache(self) -> None:
+        """Clear the product cache."""
+        if self.cache:
+            self.cache.clear_cache()
+            logger.info("Product cache cleared")
+
+    def test_woocommerce_connection(self) -> bool:
+        """Test connection to WooCommerce API.
+        
+        Returns:
+            True if connection is successful, False otherwise
+        """
+        if not self.woo_client:
+            return False
+        
+        return self.woo_client.test_connection()
+
+    def get_woocommerce_store_info(self) -> Optional[Dict]:
+        """Get information about the WooCommerce store.
+        
+        Returns:
+            Store information dictionary or None if not available
+        """
+        if not self.woo_client:
+            return None
+        
+        return self.woo_client.get_store_info()
+
+    def get_woocommerce_total_products(self) -> Optional[int]:
+        """Get total number of products in WooCommerce store.
+        
+        Returns:
+            Total number of products or None if not available
+        """
+        if not self.woo_client:
+            return None
+        
+        return self.woo_client.get_total_products_count()
 
     def _group_products_by_category(self) -> None:
         """Group products by category for efficient lookup."""

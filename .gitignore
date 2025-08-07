@@ -207,3 +207,71 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Medical Recommender - Sensitive Data
+# ===========================================
+# Environment files with API keys and secrets
+.env
+.env.local
+.env.production
+.env.staging
+.env.development
+.env.*
+!.env.example
+
+# WooCommerce API data and cache
+medical-recommender-for-woocommerce/data/products.json
+medical-recommender-for-woocommerce/data/cache_metadata.json
+medical-recommender-for-woocommerce/data/woocommerce_*.json
+medical-recommender-for-woocommerce/data/real_products.csv
+medical-recommender-for-woocommerce/data/backup_*.json
+*/data/products.json
+*/data/cache_metadata.json
+
+# Logs containing sensitive information
+logs/
+*.log
+debug.log
+api.log
+woocommerce.log
+
+# API keys and credentials
+secrets/
+credentials/
+keys/
+*.key
+*.secret
+config/secrets.py
+
+# Real store data backups
+backups/
+dumps/
+exports/
+
+# User data and analytics
+users/
+analytics/
+user_queries.log
+queries.db
+
+# Temporary files with sensitive content
+temp/
+tmp/
+cache/
+*.tmp
+*.cache
+
+# IDE and editor files with project-specific settings
+.vscode/settings.json
+.idea/workspace.xml
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific files that might contain sensitive data
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker secrets and environment
+docker-compose.override.yml
+.dockerignore.local

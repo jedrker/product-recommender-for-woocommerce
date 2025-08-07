@@ -12,6 +12,7 @@ import sys
 from pathlib import Path
 
 from core.recommender import MedicalRecommender
+from utils.config import Config
 
 
 def setup_logging(verbose: bool = False) -> None:
@@ -95,6 +96,22 @@ def interactive_mode(recommender: MedicalRecommender) -> None:
                 print_categories(recommender)
                 continue
             
+            if query.lower() == 'refresh':
+                print_refresh_products(recommender)
+                continue
+            
+            if query.lower() == 'cache':
+                print_cache_info(recommender)
+                continue
+            
+            if query.lower() == 'woo':
+                print_woocommerce_info(recommender)
+                continue
+            
+            if query.lower() == 'total':
+                print_total_products(recommender)
+                continue
+            
             # Generate recommendation
             recommendation = recommender.recommend(query)
             print_recommendation(recommendation)
@@ -112,6 +129,10 @@ def print_help_commands() -> None:
     print("  help       - Pokaż tę pomoc")
     print("  stats      - Pokaż statystyki systemu")
     print("  categories - Pokaż dostępne kategorie")
+    print("  refresh    - Odśwież produkty z WooCommerce")
+    print("  cache      - Informacje o cache")
+    print("  woo        - Informacje o WooCommerce")
+    print("  total      - Sprawdź rzeczywistą liczbę produktów w WooCommerce")
     print("  quit/exit  - Wyjdź z programu")
     print()
 
@@ -126,6 +147,17 @@ def print_stats(recommender: MedicalRecommender) -> None:
     print(f"  Produkty: {recommender.get_products_count()}")
     print(f"  Kategorie: {len(recommender.get_categories())}")
     print(f"  Reguły: {len(recommender.rules)}")
+    
+    # WooCommerce info
+    if recommender.woo_client:
+        print(f"  WooCommerce: ✅ Skonfigurowany")
+        if recommender.test_woocommerce_connection():
+            print(f"  Połączenie: ✅ Aktywne")
+        else:
+            print(f"  Połączenie: ❌ Błąd")
+    else:
+        print(f"  WooCommerce: ❌ Nie skonfigurowany")
+    
     print()
 
 
@@ -141,6 +173,101 @@ def print_categories(recommender: MedicalRecommender) -> None:
         count = len(recommender._products_by_category[category])
         print(f"  • {category} ({count} produktów)")
     print()
+
+
+def print_refresh_products(recommender: MedicalRecommender) -> None:
+    """Refresh products from WooCommerce.
+    
+    Args:
+        recommender: Recommender instance
+    """
+    if not recommender.woo_client:
+        print("❌ WooCommerce nie jest skonfigurowany")
+        return
+    
+    print("🔄 Odświeżanie produktów z WooCommerce...")
+    if recommender.refresh_products():
+        print(f"✅ Odświeżono {recommender.get_products_count()} produktów")
+    else:
+        print("❌ Błąd podczas odświeżania produktów")
+    print()
+
+
+def print_cache_info(recommender: MedicalRecommender) -> None:
+    """Print cache information.
+    
+    Args:
+        recommender: Recommender instance
+    """
+    cache_info = recommender.get_cache_info()
+    
+    if cache_info:
+        print(f"\n💾 Informacje o cache:")
+        print(f"  Produkty: {cache_info['product_count']}")
+        print(f"  Wiek: {cache_info['age_human']}")
+        print(f"  Ważność: {'✅ Ważny' if cache_info['is_valid'] else '❌ Wygasł'}")
+        print(f"  Czas cache: {cache_info['cache_duration']}s")
+    else:
+        print(f"\n💾 Cache: Brak danych")
+    print()
+
+
+def print_woocommerce_info(recommender: MedicalRecommender) -> None:
+    """Print WooCommerce information.
+    
+    Args:
+        recommender: Recommender instance
+    """
+    if not recommender.woo_client:
+        print("❌ WooCommerce nie jest skonfigurowany")
+        return
+    
+    print(f"\n🛒 Informacje o WooCommerce:")
+    
+    # Test connection
+    if recommender.test_woocommerce_connection():
+        print(f"  Połączenie: ✅ Aktywne")
+    else:
+        print(f"  Połączenie: ❌ Błąd")
+    
+    # Store info
+    store_info = recommender.get_woocommerce_store_info()
+    if store_info:
+        print(f"  Sklep: {store_info.get('name', 'Nieznany')}")
+        print(f"  URL: {store_info.get('url', 'Nieznany')}")
+        print(f"  Wersja: {store_info.get('version', 'Nieznana')}")
+    else:
+        print(f"  Sklep: Nie można pobrać informacji")
+    
+    print()
+
+
+def print_total_products(recommender: MedicalRecommender) -> None:
+    """Print total number of products in WooCommerce store.
+    
+    Args:
+        recommender: Recommender instance
+    """
+    if not recommender.woo_client:
+        print("❌ WooCommerce nie jest skonfigurowany")
+        return
+    
+    print("🔍 Sprawdzanie rzeczywistej liczby produktów w WooCommerce...")
+    
+    try:
+        total = recommender.get_woocommerce_total_products()
+        if total is not None:
+            current_limit = recommender.config.max_products if recommender.config else "nieznany"
+            print(f"\n📊 Rzeczywista liczba produktów w WooCommerce:")
+            print(f"  Wszystkich produktów: {total:,}")
+            print(f"  Aktualny limit MAX_PRODUCTS: {current_limit}")
+            if isinstance(current_limit, int) and total > current_limit:
+                print(f"  ⚠️  W sklepie jest {total - current_limit:,} więcej produktów niż aktualny limit!")
+            print()
+        else:
+            print("❌ Nie udało się pobrać informacji o liczbie produktów")
+    except Exception as e:
+        print(f"❌ Błąd podczas sprawdzania liczby produktów: {e}")
 
 
 def single_query_mode(recommender: MedicalRecommender, query: str, 
@@ -175,6 +302,7 @@ Przykłady użycia:
   %(prog)s --query "ratownik"        # Pojedyncze zapytanie
   %(prog)s --query "cukrzyca" --json # Wynik w formacie JSON
   %(prog)s --products custom.csv     # Własny plik z produktami
+  %(prog)s --env .env                # Własny plik konfiguracyjny
         """
     )
     
@@ -189,6 +317,11 @@ Przykłady użycia:
     )
     
     parser.add_argument(
+        "--env", "-e",
+        help="Ścieżka do pliku .env z konfiguracją WooCommerce"
+    )
+    
+    parser.add_argument(
         "--json", "-j",
         action="store_true",
         help="Wyświetl wyniki w formacie JSON"
@@ -200,10 +333,37 @@ Przykłady użycia:
         help="Włącz szczegółowe logowanie"
     )
     
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="Wymuś odświeżenie produktów z WooCommerce"
+    )
+    
     args = parser.parse_args()
     
     # Setup logging
     setup_logging(args.verbose)
+    
+    # Load configuration
+    config = None
+    if args.env:
+        try:
+            config = Config(args.env)
+            config.validate()
+            logging.info(f"Loaded configuration from {args.env}")
+        except Exception as e:
+            logging.error(f"Failed to load configuration: {e}")
+            sys.exit(1)
+    else:
+        try:
+            config = Config()
+            if config.is_woocommerce_configured():
+                logging.info("WooCommerce configuration found")
+            else:
+                logging.info("No WooCommerce configuration, using local data only")
+        except Exception as e:
+            logging.warning(f"Configuration error: {e}")
+            config = None
     
     # Print banner for interactive mode
     if not args.query:
@@ -211,7 +371,16 @@ Przykłady użycia:
     
     try:
         # Initialize recommender
-        recommender = MedicalRecommender(args.products)
+        recommender = MedicalRecommender(args.products, config)
+        
+        # Force refresh if requested
+        if args.refresh and config and config.is_woocommerce_configured():
+            print("🔄 Wymuszanie odświeżenia produktów z WooCommerce...")
+            if recommender.refresh_products():
+                print(f"✅ Odświeżono {recommender.get_products_count()} produktów")
+            else:
+                print("❌ Błąd podczas odświeżania")
+                sys.exit(1)
         
         if args.query:
             # Single query mode

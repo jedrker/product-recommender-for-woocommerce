@@ -4,9 +4,11 @@ Inteligentny system rekomendacji produktów medycznych, który integruje się ze
 
 ## 📌 Status projektu
 
-**Aktualny etap: Etap 1 - Moduł rekomendacyjny (lokalny)** ✅
+**Aktualny etap: Etap 2 - Integracja z WooCommerce** ✅
 
-### Zrealizowane funkcjonalności (Etap 1):
+### Zrealizowane funkcjonalności:
+
+#### ✅ **Etap 1 - Moduł rekomendacyjny (lokalny)**
 - ✅ Wczytywanie produktów z pliku CSV
 - ✅ System reguł rekomendacji (zawód/choroba → kategorie produktów)
 - ✅ Logika rekomendacji z oceną pewności
@@ -14,8 +16,15 @@ Inteligentny system rekomendacji produktów medycznych, który integruje się ze
 - ✅ Pełne typowanie Python (type hints)
 - ✅ Dokumentacja Google Style
 
+#### ✅ **Etap 2 - Integracja z WooCommerce**
+- ✅ Autoryzacja przez WooCommerce REST API v3
+- ✅ Pobieranie produktów z `GET /wp-json/wc/v3/products`
+- ✅ Mapowanie danych do formatu zgodnego z systemem rekomendacji
+- ✅ Cache'owanie danych lokalnie (products.json)
+- ✅ Konfiguracja przez zmienne środowiskowe (.env)
+- ✅ Testy jednostkowe dla integracji WooCommerce
+
 ### Planowane etapy:
-- 🟨 **Etap 2**: Integracja z WooCommerce REST API
 - 🟧 **Etap 3**: API serwera (Flask/FastAPI)
 - 🟦 **Etap 4**: Frontend (HTML/JS)
 - 🟥 **Etap 5**: Konfiguracja produkcyjna
@@ -33,29 +42,42 @@ cd medical-recommender-for-woocommerce
 pip install -r requirements.txt
 ```
 
-### Uruchomienie (tryb interaktywny)
+### Konfiguracja WooCommerce (opcjonalna)
 
+1. **Skopiuj plik konfiguracyjny:**
 ```bash
-python main.py
+cp env.example .env
 ```
 
-### Przykłady użycia
+2. **Edytuj `.env` i dodaj dane WooCommerce:**
+```env
+WOOCOMMERCE_URL=https://twoj-sklep.pl
+WOOCOMMERCE_CONSUMER_KEY=ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+WOOCOMMERCE_CONSUMER_SECRET=cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+CACHE_DURATION=3600
+MAX_PRODUCTS=100
+```
+
+3. **Wygeneruj klucze API w WooCommerce:**
+   - Przejdź do: WooCommerce > Ustawienia > Zaawansowane > REST API
+   - Kliknij "Dodaj klucz"
+   - Ustaw uprawnienia: `read`
+   - Skopiuj Consumer Key i Consumer Secret
+
+### Uruchomienie
 
 ```bash
-# Tryb interaktywny
+# Tryb interaktywny (z lokalnymi danymi)
 python main.py
+
+# Z konfiguracją WooCommerce
+python main.py --env .env
 
 # Pojedyncze zapytanie
 python main.py --query "ratownik medyczny"
 
-# Wynik w formacie JSON
-python main.py --query "cukrzyca" --json
-
-# Szczegółowe logowanie
-python main.py --query "lekarz" --verbose
-
-# Własny plik z produktami
-python main.py --products custom_products.csv
+# Wymuszenie odświeżenia z WooCommerce
+python main.py --env .env --refresh
 ```
 
 ## 📊 Przykłady rekomendacji
@@ -87,64 +109,105 @@ medical-recommender-for-woocommerce/
 │   ├── __init__.py
 │   ├── models.py           # Modele danych (Product, Recommendation)
 │   ├── rules.py            # Reguły rekomendacji
-│   └── recommender.py      # Silnik rekomendacji
-├── data/                   # Dane produktów
-│   └── products.csv        # Przykładowe produkty medyczne
-├── tests/                  # Testy jednostkowe
+│   └── recommender.py      # Silnik rekomendacji (rozszerzony o WooCommerce)
+├── woo/                    # Integracja z WooCommerce
+│   ├── __init__.py
+│   ├── client.py           # Klient WooCommerce API
+│   └── mapper.py           # Mapowanie danych WooCommerce
 ├── utils/                  # Narzędzia pomocnicze
-├── main.py                 # Punkt wejścia CLI
+│   ├── __init__.py
+│   ├── config.py           # Zarządzanie konfiguracją (.env)
+│   └── cache.py            # System cache'owania
+├── data/                   # Dane produktów
+│   ├── products.csv        # Przykładowe produkty medyczne
+│   ├── products.json       # Cache produktów z WooCommerce
+│   └── cache_metadata.json # Metadane cache
+├── tests/                  # Testy jednostkowe
+│   ├── test_models.py      # Testy modeli
+│   ├── test_recommender.py # Testy silnika rekomendacji
+│   └── test_woocommerce.py # Testy integracji WooCommerce
+├── main.py                 # Punkt wejścia CLI (rozszerzony)
 ├── requirements.txt        # Zależności Python
+├── env.example            # Przykład konfiguracji
 └── README.md              # Ta dokumentacja
 ```
 
 ### Główne komponenty
 
-#### 1. `core.models`
-- **Product**: Model produktu (id, nazwa, kategoria, cena, opis)
-- **Recommendation**: Wynik rekomendacji z oceną pewności
-- **RecommendationRule**: Reguła mapująca słowa kluczowe na kategorie
-
-#### 2. `core.rules`
-- Zawiera mapowanie zawodów/chorób na kategorie produktów
-- Obsługuje słowa kluczowe w języku polskim i angielskim
-- System wagowania reguł według istotności
-
-#### 3. `core.recommender`
+#### 1. **core.recommender** (rozszerzony)
 - **MedicalRecommender**: Główny silnik rekomendacji
-- Wczytuje produkty z CSV
-- Dopasowuje reguły do zapytań użytkownika
-- Generuje rekomendacje z oceną pewności
+- Obsługuje zarówno lokalne dane CSV jak i WooCommerce API
+- Automatyczne cache'owanie produktów
+- Testowanie połączenia z WooCommerce
+
+#### 2. **woo.client**
+- **WooCommerceClient**: Klient REST API WooCommerce
+- Autoryzacja przez Consumer Key/Secret
+- Paginacja produktów
+- Obsługa błędów API
+
+#### 3. **woo.mapper**
+- **WooCommerceMapper**: Mapowanie danych
+- Konwersja z formatu WooCommerce na wewnętrzne modele
+- Mapowanie kategorii produktów
+- Ekstrakcja cen i opisów
+
+#### 4. **utils.config**
+- **Config**: Zarządzanie konfiguracją
+- Wczytywanie zmiennych środowiskowych z .env
+- Walidacja konfiguracji
+- Domyślne wartości
+
+#### 5. **utils.cache**
+- **ProductCache**: System cache'owania
+- Zapisywanie/wczytywanie produktów w JSON
+- Automatyczne wygasanie cache
+- Metadane cache
 
 ## 🔧 Format danych
 
-### products.csv
+### products.csv (lokalne dane)
 ```csv
 id,name,category,price,description
 1,"Torba medyczna basic","torby",199.99,"Podstawowa torba ratownicza"
 2,"Stetoskop kardiologiczny","sprzet_diagnostyczny",450.00,"Profesjonalny stetoskop"
 ```
 
-### Kategorie produktów
-- `sprzet_diagnostyczny` - stetoskopy, ciśnieniomierze, termometry
-- `torby` - torby medyczne, walizki ratownicze
-- `higiena` - rękawice, maseczki, żele dezynfekujące
-- `diabetologia` - glukometry, paski testowe, lancety
-- `opatrunki` - gaza, bandaże, plastry
-- `sprzet_ratowniczy` - defibrylatory, aspiratory
-- `apteczki` - kompletne zestawy pierwszej pomocy
-- `ortopedia` - kołnierze, stabilizatory
-- `narzedzia` - nożyczki, pinzety chirurgiczne
-- `materialy_jednorazowe` - strzykawki, igły
-- `wyposazenie` - lampy, stoły badawcze
+### products.json (cache WooCommerce)
+```json
+[
+  {
+    "id": 123,
+    "name": "Stetoskop Medical",
+    "category": "sprzet_diagnostyczny",
+    "price": 299.99,
+    "description": "Profesjonalny stetoskop kardiologiczny"
+  }
+]
+```
+
+### .env (konfiguracja)
+```env
+WOOCOMMERCE_URL=https://twoj-sklep.pl
+WOOCOMMERCE_CONSUMER_KEY=ck_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+WOOCOMMERCE_CONSUMER_SECRET=cs_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+CACHE_DURATION=3600
+MAX_PRODUCTS=100
+API_TIMEOUT=30
+LOG_LEVEL=INFO
+```
 
 ## 🧪 Testy
 
 ```bash
-# Uruchomienie testów
+# Wszystkie testy
 pytest
 
+# Testy WooCommerce
+pytest tests/test_woocommerce.py -v
+
 # Testy z pokryciem kodu
-pytest --cov=core
+pytest --cov=core --cov=woo --cov=utils
 
 # Szczegółowe logowanie testów
 pytest -v
@@ -164,27 +227,42 @@ pytest -v
 - `confidence`: Ocena pewności (0.0-1.0)
 - `reasoning`: Uzasadnienie rekomendacji
 
-**Przykład w kodzie:**
+### Nowe metody WooCommerce
+
 ```python
 from core.recommender import MedicalRecommender
+from utils.config import Config
 
-recommender = MedicalRecommender()
-recommendation = recommender.recommend("ratownik medyczny")
+# Konfiguracja WooCommerce
+config = Config(".env")
+recommender = MedicalRecommender(config=config)
 
-print(f"Pewność: {recommendation.confidence:.1%}")
-for product in recommendation.products[:3]:
-    print(f"- {product.name} ({product.price} PLN)")
+# Pobieranie produktów z WooCommerce
+success = recommender.load_products_from_woocommerce()
+
+# Wymuszenie odświeżenia
+success = recommender.refresh_products()
+
+# Testowanie połączenia
+is_connected = recommender.test_woocommerce_connection()
+
+# Informacje o cache
+cache_info = recommender.get_cache_info()
+
+# Informacje o sklepie
+store_info = recommender.get_woocommerce_store_info()
 ```
 
 ## 🔄 Algorytm rekomendacji
 
-1. **Analiza zapytania**: Konwersja na małe litery, tokenizacja
-2. **Dopasowanie reguł**: Wyszukiwanie pasujących słów kluczowych
-3. **Obliczenie score'u**: Uwzględnienie wagi reguły i dokładności dopasowania
-4. **Selekcja kategorii**: Wybór kategorii z najwyższymi score'ami
-5. **Filtrowanie produktów**: Pobranie produktów z wybranych kategorii
-6. **Sortowanie**: Według ceny (rosnąco)
-7. **Ocena pewności**: Na podstawie jakości dopasowania reguł
+1. **Źródło danych**: CSV (lokalne) lub WooCommerce API + cache
+2. **Analiza zapytania**: Konwersja na małe litery, tokenizacja
+3. **Dopasowanie reguł**: Wyszukiwanie pasujących słów kluczowych
+4. **Obliczenie score'u**: Uwzględnienie wagi reguły i dokładności dopasowania
+5. **Selekcja kategorii**: Wybór kategorii z najwyższymi score'ami
+6. **Filtrowanie produktów**: Pobranie produktów z wybranych kategorii
+7. **Sortowanie**: Według ceny (rosnąco)
+8. **Ocena pewności**: Na podstawie jakości dopasowania reguł
 
 ## 🐛 Debugowanie
 
@@ -205,6 +283,24 @@ python main.py
 # W trybie interaktywnym wpisz: stats
 ```
 
+### Informacje o WooCommerce
+```bash
+python main.py
+# W trybie interaktywnym wpisz: woo
+```
+
+### Informacje o cache
+```bash
+python main.py
+# W trybie interaktywnym wpisz: cache
+```
+
+### Odświeżenie produktów
+```bash
+python main.py
+# W trybie interaktywnym wpisz: refresh
+```
+
 ## 📝 Rozwój
 
 ### Dodawanie nowych reguł
@@ -219,11 +315,20 @@ RecommendationRule(
 )
 ```
 
-### Dodawanie nowych produktów
-Edytuj plik `data/products.csv` i dodaj nowe wiersze:
+### Dodawanie nowych mapowań kategorii
+Edytuj plik `woo/mapper.py` i dodaj nowe mapowanie w `CATEGORY_MAPPING`:
 
-```csv
-31,"Nowy produkt","kategoria",99.99,"Opis produktu"
+```python
+"nowa_kategoria_woo": "wewnetrzna_kategoria",
+```
+
+### Konfiguracja cache
+```python
+# Zmiana czasu cache'owania (w sekundach)
+CACHE_DURATION=7200  # 2 godziny
+
+# Maksymalna liczba produktów
+MAX_PRODUCTS=200
 ```
 
 ## 🤝 Konwencje kodu
@@ -233,16 +338,18 @@ Edytuj plik `data/products.csv` i dodaj nowe wiersze:
 - **Google Style** docstringi
 - **pytest** do testów jednostkowych
 - **Modułowość** - każda warstwa w oddzielnym folderze
+- **Obsługa błędów** - szczegółowe logowanie i walidacja
 
-## 📚 Następne kroki (Etap 2)
+## 📚 Następne kroki (Etap 3)
 
-- [ ] Integracja z WooCommerce REST API
-- [ ] Pobieranie produktów z sklepu online
-- [ ] Cache'owanie danych lokalnie
-- [ ] Konfiguracja przez zmienne środowiskowe
+- [ ] API serwera Flask/FastAPI
+- [ ] Endpointy REST API
+- [ ] Middleware CORS
+- [ ] Walidacja zapytań
+- [ ] Dokumentacja API (Swagger/OpenAPI)
 
 ---
 
 **Autor**: Medical Recommender Team  
 **Licencja**: MIT  
-**Status**: W rozwoju (Etap 1/5 ukończony) 
+**Status**: W rozwoju (Etap 2/5 ukończony) 
